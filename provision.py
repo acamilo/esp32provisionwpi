@@ -5,6 +5,7 @@ import os
 import subprocess
 import serial
 import time
+import sys
 
 parser = argparse.ArgumentParser()
 #define args
@@ -54,7 +55,7 @@ print "(%s) Devices"%len(devices)
 print "(total:%s free:%s) HostNames"%(hostnamecount,len(hostnames))
 
 #Extracted from arduino 
-progline = "python esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 boot_app0.bin 0x1000 bootloader_qio_80m.bin 0x10000 WifiManagerExample.ino.ino.bin 0x8000 WifiManagerExample.ino.ino.partitions.bin"
+progline = "python esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xe000 boot_app0.bin 0x1000 bootloader_qio_80m.bin 0x10000 WifiManagerExample.ino.bin 0x8000 WifiManagerExample.ino.partitions.bin"
 
 res = subprocess.call(progline,shell=True)
 
@@ -71,6 +72,15 @@ ser.readline() # discard first line
 # WIFIADDR- or MACADDR- and save everything
 # after the - removing whitespace and newlines.
 # read 10 lines before giving up
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 timeout = 0
 wifi = ""
@@ -78,7 +88,8 @@ mac  = ""
 while True:
     time.sleep(1)
     line = ser.readline()
-    print ".",
+    sys.stdout.write(bcolors.OKGREEN+line+bcolors.ENDC)
+    sys.stdout.flush()
     p = line.split("-")
     if p[0]=='WIFIADDR':
         wifi = p[1].strip()
@@ -88,7 +99,7 @@ while True:
         break
     if timeout>10:
         print "Timeout Waiting for data from device!"
-        exit(-3)
+        #exit(-3)
         break
     timeout += 1
 
@@ -107,11 +118,16 @@ hostname = hostnames.pop()
 print "Assigning %s to %s" %(hostname,mac)
 devicesf.write("%s %s %s\n"%(hostname,mac,wifi))
 devicesf.close()
+os.remove("label-64.bmp")
+os.system("convert -size x64 -font Clear-Sans-Bold label:\"%s\n%s\" +dither -monochrome label-64.bmp"%(hostname,mac) )
+time.sleep(8)
+os.system("python ../Brother-PT-D600-Protocol-Analasys/printexample.py label-64.bmp")
+time.sleep(15)
+os.system("python ../Brother-PT-D600-Protocol-Analasys/printexample.py label-64.bmp")
+
 exit(0)
 #dev = {'host':hostname,'mac':mac,'ip':wifi}
 #devices.append(dev)
-
-
 #write out dev
 
 
